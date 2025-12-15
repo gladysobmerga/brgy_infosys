@@ -26,11 +26,14 @@ This system helps barangay officials efficiently manage resident information, is
 - **bcryptjs** for password hashing
 
 ### Frontend
-- **React.js** with React Router
+- **React.js 18** with **Vite**
+- **React Router** for navigation
 - **Axios** for API communication
 - **Tailwind CSS** for styling
-- **Headless UI** for components
-- **Recharts** for data visualization
+- **Radix UI** for accessible components
+- **Lucide React** for icons
+- **React Toastify** for notifications
+- **Zustand** for state management
 
 ### DevOps
 - **Docker** & Docker Compose
@@ -61,13 +64,19 @@ This system helps barangay officials efficiently manage resident information, is
 
 4. Start all services:
    ```bash
-   docker-compose up -d
+   docker-compose up --build -d
    ```
 
 5. Access the application:
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:5000
-   - Database: localhost:5432
+   - **Frontend**: http://localhost:7685
+   - **Backend API**: http://localhost:7000
+   - **Database**: localhost:5432
+
+6. Check service status:
+   ```bash
+   docker-compose ps
+   docker-compose logs -f
+   ```
 
 ### Local Development Setup
 
@@ -96,51 +105,72 @@ npm start
 
 ⚠️ **Important**: Change the default password after first login!
 
+## Quick Start Guide
+
+1. **Start the system**:
+   ```bash
+   docker-compose up -d
+   ```
+
+2. **Open your browser** and navigate to: http://localhost:7685
+
+3. **Login** with default credentials (admin / Admin@123)
+
+4. **Explore the features**:
+   - View dashboard statistics
+   - Manage residents
+   - Issue certificates
+   - Track document requests
+   - Manage barangay officials
+
 ## Database Schema
 
 The system includes the following main tables:
 - `users` - System users with role-based access
-- `residents` - Resident information
-- `certificates` - Issued certificates
-- `certificate_types` - Types of certificates available
+- `residents` - Resident information with complete profiles
+- `certificates` - Issued certificates with tracking
+- `certificate_types` - Available certificate types and fees
 - `document_requests` - Document requests from residents
 - `barangay_officials` - Current and historical officials
-- `activity_logs` - System audit trail
+- `activity_logs` - Complete system audit trail
 
 ## API Endpoints
 
 ### Authentication
 - `POST /api/auth/login` - User login
-- `POST /api/auth/verify` - Verify token
+- `POST /api/auth/verify` - Verify JWT token
 
 ### Residents
-- `GET /api/residents` - List all residents (paginated)
+- `GET /api/residents` - List all residents (paginated, searchable)
 - `GET /api/residents/:id` - Get resident details
 - `POST /api/residents` - Create new resident
-- `PUT /api/residents/:id` - Update resident
+- `PUT /api/residents/:id` - Update resident information
 - `DELETE /api/residents/:id` - Deactivate resident
 
 ### Certificates
 - `GET /api/certificates` - List certificates (paginated)
-- `GET /api/certificates/types` - Get certificate types
+- `GET /api/certificates/types` - Get available certificate types
+- `GET /api/certificates/:id` - Get certificate details
 - `POST /api/certificates` - Issue new certificate
 - `PATCH /api/certificates/:id/status` - Update certificate status
 
 ### Requests
-- `GET /api/requests` - List document requests
-- `POST /api/requests` - Create new request
+- `GET /api/requests` - List document requests (with filters)
+- `POST /api/requests` - Create new document request
 - `PATCH /api/requests/:id/status` - Update request status
 
 ### Officials
-- `GET /api/officials/current` - Get current officials
+- `GET /api/officials/current` - Get current barangay officials
+- `GET /api/officials` - Get all officials (including history)
 - `POST /api/officials` - Add new official (admin only)
+- `PUT /api/officials/:id` - Update official information
 - `PATCH /api/officials/:id/end-term` - End official's term
 
 ### Dashboard
 - `GET /api/dashboard/stats` - Get system statistics
 - `GET /api/dashboard/activities` - Get recent activities
-- `GET /api/dashboard/certificates/by-type` - Certificate statistics
-- `GET /api/dashboard/certificates/trends` - Monthly trends
+- `GET /api/dashboard/certificates/by-type` - Certificate statistics by type
+- `GET /api/dashboard/certificates/trends` - Monthly certificate trends
 
 ## Docker Commands
 
@@ -148,17 +178,33 @@ The system includes the following main tables:
 # Start all services
 docker-compose up -d
 
-# View logs
+# Start with rebuild
+docker-compose up --build -d
+
+# View logs (all services)
 docker-compose logs -f
+
+# View logs (specific service)
+docker-compose logs -f backend
+docker-compose logs -f frontend
 
 # Stop all services
 docker-compose down
 
-# Rebuild services
-docker-compose up -d --build
+# Stop and remove volumes
+docker-compose down -v
 
-# Access database
-docker-compose exec db psql -U brgy_user -d brgy_system
+# Restart a service
+docker-compose restart backend
+
+# Check service status
+docker-compose ps
+
+# Access database CLI
+docker-compose exec db psql -U brgy_admin -d brgy_infosys
+
+# Access backend container
+docker-compose exec backend sh
 ```
 
 ## Project Structure
@@ -168,33 +214,89 @@ brgy_infosys/
 ├── backend/
 │   ├── src/
 │   │   ├── config/         # Database configuration
-│   │   ├── middleware/     # Authentication middleware
-│   │   └── routes/         # API route handlers
+│   │   ├── middleware/     # Auth middleware
+│   │   ├── routes/         # API route handlers
+│   │   └── index.js        # Main server file
 │   ├── sql/
 │   │   ├── schema.sql      # Database schema
-│   │   └── seed.sql        # Initial data
+│   │   └── seed.sql        # Initial seed data
 │   ├── Dockerfile
-│   └── package.json
+│   ├── package.json
+│   └── .env.example
 ├── frontend/
+│   ├── public/
+│   │   └── index.html
 │   ├── src/
-│   │   ├── components/     # React components
+│   │   ├── components/     # Reusable components
+│   │   ├── context/        # React context (Auth)
 │   │   ├── pages/          # Page components
-│   │   └── services/       # API services
+│   │   ├── services/       # API service layer
+│   │   ├── App.js          # Main app component
+│   │   ├── index.js        # Entry point
+│   │   └── index.css       # Global styles
 │   ├── Dockerfile
-│   └── package.json
+│   ├── package.json
+│   ├── tailwind.config.js
+│   └── postcss.config.js
 ├── docker-compose.yml
-└── .env.example
+├── .env.example
+└── README.md
 ```
 
 ## Security Features
 
-- Password hashing with bcrypt
-- JWT token-based authentication
-- Role-based authorization
-- SQL injection prevention with parameterized queries
-- CORS protection
-- Rate limiting
-- Helmet.js for HTTP headers security
+- **Password Hashing**: bcrypt with salt rounds
+- **JWT Authentication**: Secure token-based auth
+- **Role-Based Access Control**: Admin, Staff, Clerk roles
+- **SQL Injection Prevention**: Parameterized queries
+- **CORS Protection**: Configurable origins
+- **Rate Limiting**: API request throttling
+- **HTTP Security Headers**: Helmet.js integration
+- **Input Validation**: Joi schema validation
+
+## Troubleshooting
+
+### Port Already in Use
+```bash
+# Check what's using the port
+lsof -i :7685  # Frontend
+lsof -i :7000  # Backend
+
+# Stop the process or change ports in docker-compose.yml
+```
+
+### Database Connection Issues
+```bash
+# Check if database is healthy
+docker-compose ps
+
+# View database logs
+docker-compose logs db
+
+# Restart database
+docker-compose restart db
+```
+
+### Frontend Not Loading
+```bash
+# Check frontend logs
+docker-compose logs frontend
+
+# Rebuild frontend
+docker-compose up --build frontend
+```
+
+### Backend API Not Responding
+```bash
+# Check backend logs
+docker-compose logs backend
+
+# Check if routes are loaded
+docker-compose exec backend ls -la src/routes/
+
+# Restart backend
+docker-compose restart backend
+```
 
 ## Development
 
@@ -214,6 +316,33 @@ npm test
 
 The project follows standard JavaScript/React conventions. Use ESLint and Prettier for code formatting.
 
+### Adding New Features
+
+1. Create feature branch
+2. Implement backend API endpoint
+3. Add frontend component/page
+4. Test thoroughly
+5. Submit pull request
+
+## Environment Variables
+
+### Backend (.env)
+```
+NODE_ENV=production
+PORT=7000
+DB_HOST=db
+DB_PORT=5432
+DB_USER=brgy_admin
+DB_PASSWORD=brgy_pass_2024
+DB_NAME=brgy_infosys
+JWT_SECRET=your_secret_key
+```
+
+### Frontend (.env)
+```
+VITE_API_BASE_URL=http://localhost:7000
+```
+
 ## Contributing
 
 1. Fork the repository
@@ -230,19 +359,33 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 For issues and questions:
 - Create an issue on GitHub
-- Contact: admin@barangay.local
+- Email: admin@barangay.local
+- Documentation: See README.md
 
 ## Roadmap
 
+- [x] User authentication and authorization
+- [x] Resident management system
+- [x] Certificate issuance tracking
+- [x] Document request management
+- [x] Dashboard with analytics
 - [ ] SMS notifications for certificate status
-- [ ] Mobile application
+- [ ] Mobile responsive improvements
 - [ ] Digital signature for certificates
 - [ ] Online payment integration
-- [ ] Report generation (PDF exports)
+- [ ] PDF certificate generation
 - [ ] Blotter records management
-- [ ] Household profiling
+- [ ] Household profiling system
+- [ ] Advanced reporting module
 
 ## Acknowledgments
 
 - Built for barangay administration modernization
 - Inspired by best practices in government information systems
+- Community-driven development
+
+---
+
+**Version**: 1.0.0  
+**Last Updated**: December 2024  
+**Maintainer**: gladysobmerga

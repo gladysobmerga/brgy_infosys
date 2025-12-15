@@ -57,8 +57,7 @@ services:
     container_name: brgy_frontend
     restart: unless-stopped
     environment:
-      REACT_APP_API_URL: http://localhost:7000
-      PORT: 7685
+      - VITE_API_BASE_URL=http://localhost:7000
     ports:
       - "7685:7685"
     depends_on:
