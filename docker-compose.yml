@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: brgy_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: brgy_admin
+      POSTGRES_PASSWORD: brgy_pass_2024
+      POSTGRES_DB: brgy_infosys
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./backend/sql/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+    networks:
+      - brgy_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U brgy_admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: brgy_backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 7000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: brgy_admin
+      DB_PASSWORD: brgy_pass_2024
+      DB_NAME: brgy_infosys
+      JWT_SECRET: your_jwt_secret_key_change_in_production
+    ports:
+      - "7000:7000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/usr/src/app
+      - /usr/src/app/node_modules
+    networks:
+      - brgy_network
+    command: npm start
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: brgy_frontend
+    restart: unless-stopped
+    environment:
+      REACT_APP_API_URL: http://localhost:7000
+      PORT: 7685
+    ports:
+      - "7685:7685"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/usr/src/app
+      - /usr/src/app/node_modules
+    networks:
+      - brgy_network
+    stdin_open: true
+    tty: true
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  brgy_network:
+    driver: bridge
